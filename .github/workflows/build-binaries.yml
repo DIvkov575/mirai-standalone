@@ -61,10 +61,21 @@ jobs:
         run: |
           pyinstaller ark_run.spec --clean --noconfirm
 
-      - name: Test built binaries
+      - name: Test built binaries # sneaky stupid test (exec stops early -> Fail; exec doesn't stop within 15 sec -> Success)
         run: |
-          ./dist/ark_run
-
+          set -e
+          ./dist/ark_run &
+          pid=$!
+          
+          sleep 15
+          
+          if kill -0 "$pid" 2>/dev/null; then
+            echo "Process survived 15 seconds, success!"
+            kill "$pid"
+          else
+            echo "Process exited before 15 seconds → fail"
+            exit 1
+          fi
       - name: Create archive (Windows)
         if: matrix.platform == 'windows'
         run: |
